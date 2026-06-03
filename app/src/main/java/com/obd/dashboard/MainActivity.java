@@ -9,6 +9,7 @@ import android.text.format.Time;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -39,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
     // 可用的数据项配置
     private final String[] ITEM_KEYS = {"coolant_temp", "avg_fuel", "instant_fuel", "battery", "throttle", "engine_load"};
     private final String[] ITEM_ICONS = {"🌡️", "⛽", "⚡", "🔋", "🚦", "💪"};
-    private final String[] ITEM_NAMES = {"水温", "平均油耗", "瞬时油耗", "电池电压", "节气门开度", "发动机负荷"};
+    private final String[] ITEM_NAMES = {"水温", "平均油耗", "瞬时油耗", "电池电压", "节气门", "发动机负荷"};
     private final String[] ITEM_UNITS = {"°C", "L/100km", "L/100km", "V", "%", "%"};
     
     @Override
@@ -77,8 +78,12 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         SharedPreferences prefs = getSharedPreferences("dashboard_settings", MODE_PRIVATE);
         String selectedStr = prefs.getString("selected_items", "coolant_temp,avg_fuel,battery");
         selectedItems.clear();
-        for (String key : selectedStr.split(",")) {
-            selectedItems.add(key);
+        if (!selectedStr.isEmpty()) {
+            for (String key : selectedStr.split(",")) {
+                if (key != null && !key.isEmpty()) {
+                    selectedItems.add(key);
+                }
+            }
         }
         refreshLeftArea();
     }
@@ -94,6 +99,7 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         editor.apply();
         
         refreshLeftArea();
+        Toast.makeText(this, "显示内容已更新", Toast.LENGTH_SHORT).show();
     }
     
     private void refreshLeftArea() {
@@ -101,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         activeItems.clear();
         
         for (String key : selectedItems) {
-            // 找到对应的索引
             int index = -1;
             for (int i = 0; i < ITEM_KEYS.length; i++) {
                 if (ITEM_KEYS[i].equals(key)) {
@@ -120,62 +125,57 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         if (selectedItems.isEmpty()) {
             TextView emptyView = new TextView(this);
             emptyView.setText("长按此处\n选择数据");
-            emptyView.setTextSize(12);
+            emptyView.setTextSize(10);
             emptyView.setTextColor(0x88888888);
             emptyView.setGravity(android.view.Gravity.CENTER);
-            emptyView.setPadding(0, 20, 0, 20);
+            emptyView.setPadding(0, 10, 0, 10);
             llLeftArea.addView(emptyView);
         }
     }
     
     private void openItemSelector() {
+        // 创建自定义对话框
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_item_selector, null);
-        builder.setView(dialogView);
         
-        ListView listView = dialogView.findViewById(R.id.lv_data_items);
+        final ListView listView = dialogView.findViewById(R.id.lv_data_items);
         Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
         Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
         
-        // 构建显示名称
-        String[] displayNames = new String[ITEM_KEYS.length];
-        for (int i = 0; i < ITEM_KEYS.length; i++) {
-            displayNames[i] = ITEM_ICONS[i] + " " + ITEM_NAMES[i];
-        }
-        
-        // 当前选中状态
+        // 构建显示列表
+        final List<String> itemList = new ArrayList<>();
         final boolean[] checked = new boolean[ITEM_KEYS.length];
+        
         for (int i = 0; i < ITEM_KEYS.length; i++) {
+            itemList.add(ITEM_ICONS[i] + " " + ITEM_NAMES[i]);
             checked[i] = selectedItems.contains(ITEM_KEYS[i]);
         }
         
-        final AlertDialog dialog = builder.create();
-        
-        // 设置 ListView
-        listView.setAdapter(new android.widget.ArrayAdapter<>(this, 
-            android.R.layout.simple_list_item_multiple_choice, displayNames));
+        // 设置适配器
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+            this, android.R.layout.simple_list_item_multiple_choice, itemList);
+        listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         
+        // 设置当前选中状态
         for (int i = 0; i < checked.length; i++) {
             listView.setItemChecked(i, checked[i]);
         }
         
-        // 监听选中变化
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            checked[position] = listView.isItemChecked(position);
-        });
+        final AlertDialog dialog = builder.create();
+        dialog.setView(dialogView);
         
         // 确定按钮
         btnConfirm.setOnClickListener(v -> {
+            // 获取选中的项
             selectedItems.clear();
             for (int i = 0; i < ITEM_KEYS.length; i++) {
-                if (checked[i]) {
+                if (listView.isItemChecked(i)) {
                     selectedItems.add(ITEM_KEYS[i]);
                 }
             }
             saveSettings();
             dialog.dismiss();
-            Toast.makeText(this, "显示内容已更新", Toast.LENGTH_SHORT).show();
         });
         
         // 取消按钮
