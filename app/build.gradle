@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace 'com.obd.window'
-    compileSdk 34
+    namespace 'com.ileja.carrobot'  // 改为原项目包名
+    compileSdk 33
 
     defaultConfig {
-        applicationId "com.obd.window"
+        applicationId "com.ileja.carrobot"  // 与原项目相同包名
         minSdk 21
-        targetSdk 34
+        targetSdk 33
         versionCode 1
         versionName "1.0"
     }
@@ -22,13 +22,13 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 }
