@@ -3,80 +3,79 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#1a1a2e">
+    android:padding="8dp"
+    android:background="#FF000000">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="显示设置"
-        android:textSize="20sp"
+        android:textSize="16sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold"
-        android:layout_marginBottom="20dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="左侧区域显示内容"
-        android:textSize="14sp"
-        android:textColor="#CCCCCC"
-        android:layout_marginBottom="10dp"/>
+        android:layout_marginBottom="12dp"/>
 
     <CheckBox
         android:id="@+id/cb_coolant_temp"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="🌡️ 水温"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="true"/>
 
     <CheckBox
         android:id="@+id/cb_avg_fuel"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="⛽ 平均油耗"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="true"/>
 
     <CheckBox
         android:id="@+id/cb_battery"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="🔋 电池电压"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="true"/>
 
     <CheckBox
         android:id="@+id/cb_instant_fuel"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="⚡ 瞬时油耗"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="false"/>
 
     <CheckBox
         android:id="@+id/cb_throttle"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="🚦 节气门开度"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="false"/>
 
     <CheckBox
         android:id="@+id/cb_engine_load"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="32dp"
         android:text="💪 发动机负荷"
+        android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:checked="false"/>
 
     <Button
         android:id="@+id/btn_save"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="40dp"
         android:text="保存"
+        android:textSize="12sp"
         android:backgroundTint="#4CAF50"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="12dp"/>
 
 </LinearLayout>
