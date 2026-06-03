@@ -8,8 +8,6 @@ buildscript {
     }
 }
 
-// 删除 allprojects 块，因为已经在 settings.gradle 中配置了
-
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
