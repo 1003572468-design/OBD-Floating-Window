@@ -18,7 +18,7 @@
         android:id="@+id/lv_data_items"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="200dp"
+        android:maxHeight="160dp"
         android:choiceMode="multipleChoice" />
 
     <LinearLayout
