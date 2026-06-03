@@ -19,6 +19,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -72,12 +73,12 @@ public class DynamicIslandService extends Service implements OBDDataListener {
     }
     
     private void initDataItems() {
-        dataItems.put("coolant_temp", new DataItem("🌡️", "水温", "°C", true));
-        dataItems.put("speed", new DataItem("🏎️", "车速", "km/h", true));
-        dataItems.put("rotate_speed", new DataItem("⚙️", "转速", "rpm", false));
-        dataItems.put("battery", new DataItem("🔋", "电压", "V", true));
-        dataItems.put("realtime_fuel", new DataItem("⛽", "瞬时油耗", "L/100km", false));
-        dataItems.put("avg_fuel", new DataItem("📊", "平均油耗", "L/100km", false));
+        dataItems.put("coolant_temp", new DataItem("coolant_temp", "🌡️", "水温", "°C", true));
+        dataItems.put("speed", new DataItem("speed", "🏎️", "车速", "km/h", true));
+        dataItems.put("rotate_speed", new DataItem("rotate_speed", "⚙️", "转速", "rpm", false));
+        dataItems.put("battery", new DataItem("battery", "🔋", "电压", "V", true));
+        dataItems.put("realtime_fuel", new DataItem("realtime_fuel", "⛽", "瞬时油耗", "L/100km", false));
+        dataItems.put("avg_fuel", new DataItem("avg_fuel", "📊", "平均油耗", "L/100km", false));
     }
     
     private void createFloatingWindow() {
@@ -215,9 +216,10 @@ public class DynamicIslandService extends Service implements OBDDataListener {
         
         int i = 0;
         for (Map.Entry<String, DataItem> entry : dataItems.entrySet()) {
-            keys[i] = entry.getKey();
-            items[i] = entry.getValue().icon + " " + entry.getValue().name;
-            checked[i] = entry.getValue().selected;
+            DataItem item = entry.getValue();
+            keys[i] = item.key;
+            items[i] = item.icon + " " + item.name;
+            checked[i] = item.selected;
             i++;
         }
         
@@ -254,9 +256,10 @@ public class DynamicIslandService extends Service implements OBDDataListener {
     private void loadSelectedItems() {
         android.content.SharedPreferences prefs = getSharedPreferences("obd_settings", MODE_PRIVATE);
         for (Map.Entry<String, DataItem> entry : dataItems.entrySet()) {
-            boolean defaultValue = entry.getValue().selected;
+            DataItem item = entry.getValue();
+            boolean defaultValue = item.selected;
             boolean saved = prefs.getBoolean("show_" + entry.getKey(), defaultValue);
-            entry.getValue().selected = saved;
+            item.selected = saved;
         }
     }
     
@@ -268,21 +271,25 @@ public class DynamicIslandService extends Service implements OBDDataListener {
     private void updateAllData(String dataStr) {
         String[] parts = dataStr.split(",");
         if (parts.length >= 6) {
-            float temp = Float.parseFloat(parts[0]);
-            float speed = Float.parseFloat(parts[1]);
-            float rotate = Float.parseFloat(parts[2]);
-            float battery = Float.parseFloat(parts[3]);
-            float fuelRealtime = Float.parseFloat(parts[4]);
-            float fuelAvg = Float.parseFloat(parts[5]);
-            
-            updateItemView("coolant_temp", temp, "%.1f");
-            updateItemView("speed", speed, "%.0f");
-            updateItemView("rotate_speed", rotate, "%.0f");
-            updateItemView("battery", battery, "%.1f");
-            updateItemView("realtime_fuel", fuelRealtime, "%.1f");
-            updateItemView("avg_fuel", fuelAvg, "%.1f");
-            
-            checkAndWarn(temp, rotate, battery);
+            try {
+                float temp = Float.parseFloat(parts[0]);
+                float speed = Float.parseFloat(parts[1]);
+                float rotate = Float.parseFloat(parts[2]);
+                float battery = Float.parseFloat(parts[3]);
+                float fuelRealtime = Float.parseFloat(parts[4]);
+                float fuelAvg = Float.parseFloat(parts[5]);
+                
+                updateItemView("coolant_temp", temp, "%.1f");
+                updateItemView("speed", speed, "%.0f");
+                updateItemView("rotate_speed", rotate, "%.0f");
+                updateItemView("battery", battery, "%.1f");
+                updateItemView("realtime_fuel", fuelRealtime, "%.1f");
+                updateItemView("avg_fuel", fuelAvg, "%.1f");
+                
+                checkAndWarn(temp, rotate, battery);
+            } catch (NumberFormatException e) {
+                // 忽略解析错误
+            }
         }
     }
     
@@ -375,11 +382,20 @@ public class DynamicIslandService extends Service implements OBDDataListener {
         return null;
     }
     
+    // DataItem 类 - 添加 key 字段
     private static class DataItem {
-        String icon, name, unit;
+        String key;
+        String icon;
+        String name;
+        String unit;
         boolean selected;
-        DataItem(String icon, String name, String unit, boolean selected) {
-            this.icon = icon; this.name = name; this.unit = unit; this.selected = selected;
+        
+        DataItem(String key, String icon, String name, String unit, boolean selected) {
+            this.key = key;
+            this.icon = icon;
+            this.name = name;
+            this.unit = unit;
+            this.selected = selected;
         }
     }
 }
