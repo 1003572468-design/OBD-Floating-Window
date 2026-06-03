@@ -36,4 +36,23 @@ public class SettingsActivity extends AppCompatActivity {
     private void loadSettings() {
         SharedPreferences prefs = getSharedPreferences("dashboard_settings", MODE_PRIVATE);
         cbCoolant.setChecked(prefs.getBoolean("show_coolant", true));
-        cbAvg
+        cbAvgFuel.setChecked(prefs.getBoolean("show_avg_fuel", true));
+        cbBattery.setChecked(prefs.getBoolean("show_battery", true));
+        cbInstantFuel.setChecked(prefs.getBoolean("show_instant_fuel", false));
+        cbThrottle.setChecked(prefs.getBoolean("show_throttle", false));
+        cbEngineLoad.setChecked(prefs.getBoolean("show_engine_load", false));
+    }
+    
+    private void saveSettings() {
+        SharedPreferences.Editor editor = getSharedPreferences("dashboard_settings", MODE_PRIVATE).edit();
+        editor.putBoolean("show_coolant", cbCoolant.isChecked());
+        editor.putBoolean("show_avg_fuel", cbAvgFuel.isChecked());
+        editor.putBoolean("show_battery", cbBattery.isChecked());
+        editor.putBoolean("show_instant_fuel", cbInstantFuel.isChecked());
+        editor.putBoolean("show_throttle", cbThrottle.isChecked());
+        editor.putBoolean("show_engine_load", cbEngineLoad.isChecked());
+        editor.apply();
+        
+        finish();
+    }
+}
