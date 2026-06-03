@@ -21,24 +21,30 @@ public class DataItemView extends LinearLayout {
     private void init(Context context) {
         setOrientation(VERTICAL);
         setGravity(Gravity.CENTER);
-        setPadding(0, dpToPx(6), 0, dpToPx(6));
+        setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2));
         
+        // 设置固定最小高度（针对小屏幕）
+        setMinimumHeight(dpToPx(32));
+        
+        // 图标
         tvIcon = new TextView(context);
-        tvIcon.setTextSize(18);
+        tvIcon.setTextSize(12);  // 12sp
         tvIcon.setTextColor(0xFFFFFFFF);
         tvIcon.setGravity(Gravity.CENTER);
         addView(tvIcon, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         
+        // 数值
         tvValue = new TextView(context);
-        tvValue.setTextSize(20);
+        tvValue.setTextSize(14);  // 14sp
         tvValue.setTextColor(0xFFFFFFFF);
         tvValue.setTypeface(null, android.graphics.Typeface.BOLD);
         tvValue.setGravity(Gravity.CENTER);
         tvValue.setIncludeFontPadding(false);
         addView(tvValue, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         
+        // 单位
         tvUnit = new TextView(context);
-        tvUnit.setTextSize(10);
+        tvUnit.setTextSize(8);  // 8sp
         tvUnit.setTextColor(0x88888888);
         tvUnit.setGravity(Gravity.CENTER);
         addView(tvUnit, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -66,8 +72,6 @@ public class DataItemView extends LinearLayout {
             return String.format(java.util.Locale.US, "%.1f", value);
         } else if (dataKey.equals("battery")) {
             return String.format(java.util.Locale.US, "%.1f", value);
-        } else if (dataKey.equals("throttle") || dataKey.equals("engine_load")) {
-            return String.format(java.util.Locale.US, "%.0f", value);
         }
         return String.format(java.util.Locale.US, "%.0f", value);
     }
@@ -80,8 +84,6 @@ public class DataItemView extends LinearLayout {
         } else if (key.equals("battery")) {
             if (value < 11.5) color = 0xFFF44336;
             else if (value < 12.0) color = 0xFFFF9800;
-        } else if (key.equals("engine_load")) {
-            if (value > 80) color = 0xFFF44336;
         }
         tvValue.setTextColor(color);
     }
