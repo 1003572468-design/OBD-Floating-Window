@@ -33,9 +33,14 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
     private Handler timeHandler = new Handler(Looper.getMainLooper());
     private Runnable timeRunnable;
     
-    private Map<String, DataItemInfo> availableItems = new HashMap<>();
     private Map<String, DataItemView> activeItems = new HashMap<>();
     private List<String> selectedItems = new ArrayList<>();
+    
+    // 可用的数据项配置
+    private final String[] ITEM_KEYS = {"coolant_temp", "avg_fuel", "instant_fuel", "battery", "throttle", "engine_load"};
+    private final String[] ITEM_ICONS = {"🌡️", "⛽", "⚡", "🔋", "🚦", "💪"};
+    private final String[] ITEM_NAMES = {"水温", "平均油耗", "瞬时油耗", "电池电压", "节气门开度", "发动机负荷"};
+    private final String[] ITEM_UNITS = {"°C", "L/100km", "L/100km", "V", "%", "%"};
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         setContentView(R.layout.activity_main);
         
         initViews();
-        initAvailableItems();
         loadSettings();
         
         dataManager = OBDDataManager.getInstance();
@@ -52,11 +56,13 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         
         startTimeUpdate();
         
+        // 长按左侧区域打开选择器
         llLeftArea.setOnLongClickListener(v -> {
             openItemSelector();
             return true;
         });
         
+        // 点击时间也打开选择器
         tvTimeValue.setOnClickListener(v -> openItemSelector());
     }
     
@@ -67,23 +73,12 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         tvTimeValue = findViewById(R.id.tv_time_value);
     }
     
-    private void initAvailableItems() {
-        availableItems.put("coolant_temp", new DataItemInfo("🌡️", "水温", "°C"));
-        availableItems.put("avg_fuel", new DataItemInfo("⛽", "平均油耗", "L/100km"));
-        availableItems.put("instant_fuel", new DataItemInfo("⚡", "瞬时油耗", "L/100km"));
-        availableItems.put("battery", new DataItemInfo("🔋", "电压", "V"));
-        availableItems.put("throttle", new DataItemInfo("🚦", "节气门", "%"));
-        availableItems.put("engine_load", new DataItemInfo("💪", "发动机负荷", "%"));
-    }
-    
     private void loadSettings() {
         SharedPreferences prefs = getSharedPreferences("dashboard_settings", MODE_PRIVATE);
         String selectedStr = prefs.getString("selected_items", "coolant_temp,avg_fuel,battery");
         selectedItems.clear();
         for (String key : selectedStr.split(",")) {
-            if (availableItems.containsKey(key) && !selectedItems.contains(key)) {
-                selectedItems.add(key);
-            }
+            selectedItems.add(key);
         }
         refreshLeftArea();
     }
@@ -106,10 +101,17 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         activeItems.clear();
         
         for (String key : selectedItems) {
-            DataItemInfo info = availableItems.get(key);
-            if (info != null) {
+            // 找到对应的索引
+            int index = -1;
+            for (int i = 0; i < ITEM_KEYS.length; i++) {
+                if (ITEM_KEYS[i].equals(key)) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index >= 0) {
                 DataItemView itemView = new DataItemView(this);
-                itemView.setData(key, info.icon, info.unit, 0);
+                itemView.setData(key, ITEM_ICONS[index], ITEM_UNITS[index], 0);
                 llLeftArea.addView(itemView);
                 activeItems.put(key, itemView);
             }
@@ -135,38 +137,48 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
         Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
         
-        List<String> itemKeys = new ArrayList<>(availableItems.keySet());
-        String[] itemNames = new String[itemKeys.size()];
-        boolean[] checked = new boolean[itemKeys.size()];
-        
-        for (int i = 0; i < itemKeys.size(); i++) {
-            String key = itemKeys.get(i);
-            DataItemInfo info = availableItems.get(key);
-            itemNames[i] = info.icon + " " + info.name;
-            checked[i] = selectedItems.contains(key);
+        // 构建显示名称
+        String[] displayNames = new String[ITEM_KEYS.length];
+        for (int i = 0; i < ITEM_KEYS.length; i++) {
+            displayNames[i] = ITEM_ICONS[i] + " " + ITEM_NAMES[i];
         }
         
-        AlertDialog dialog = builder.create();
+        // 当前选中状态
+        final boolean[] checked = new boolean[ITEM_KEYS.length];
+        for (int i = 0; i < ITEM_KEYS.length; i++) {
+            checked[i] = selectedItems.contains(ITEM_KEYS[i]);
+        }
         
+        final AlertDialog dialog = builder.create();
+        
+        // 设置 ListView
         listView.setAdapter(new android.widget.ArrayAdapter<>(this, 
-            android.R.layout.simple_list_item_multiple_choice, itemNames));
+            android.R.layout.simple_list_item_multiple_choice, displayNames));
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         
         for (int i = 0; i < checked.length; i++) {
             listView.setItemChecked(i, checked[i]);
         }
         
+        // 监听选中变化
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            checked[position] = listView.isItemChecked(position);
+        });
+        
+        // 确定按钮
         btnConfirm.setOnClickListener(v -> {
             selectedItems.clear();
-            for (int i = 0; i < listView.getCount(); i++) {
-                if (listView.isItemChecked(i)) {
-                    selectedItems.add(itemKeys.get(i));
+            for (int i = 0; i < ITEM_KEYS.length; i++) {
+                if (checked[i]) {
+                    selectedItems.add(ITEM_KEYS[i]);
                 }
             }
             saveSettings();
             dialog.dismiss();
+            Toast.makeText(this, "显示内容已更新", Toast.LENGTH_SHORT).show();
         });
         
+        // 取消按钮
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         
         dialog.show();
@@ -205,6 +217,7 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
                     float throttle = parts.length > 6 ? Float.parseFloat(parts[6]) : 0;
                     float engineLoad = parts.length > 7 ? Float.parseFloat(parts[7]) : 0;
                     
+                    // 更新速度
                     tvSpeedValue.setText(String.format(Locale.US, "%.0f", speed));
                     if (speed > 120) {
                         tvSpeedValue.setTextColor(0xFFF44336);
@@ -214,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
                         tvSpeedValue.setTextColor(0xFF4CAF50);
                     }
                     
+                    // 更新转速
                     tvRpmValue.setText(String.format(Locale.US, "%.0f", rpm));
                     if (rpm > 5000) {
                         tvRpmValue.setTextColor(0xFFF44336);
@@ -223,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
                         tvRpmValue.setTextColor(0xFFFFFFFF);
                     }
                     
+                    // 更新左侧各项
                     updateLeftItem("coolant_temp", coolantTemp);
                     updateLeftItem("avg_fuel", avgFuel);
                     updateLeftItem("instant_fuel", instantFuel);
@@ -265,18 +280,6 @@ public class MainActivity extends AppCompatActivity implements OBDDataListener {
         }
         if (timeHandler != null && timeRunnable != null) {
             timeHandler.removeCallbacks(timeRunnable);
-        }
-    }
-    
-    private static class DataItemInfo {
-        String icon;
-        String name;
-        String unit;
-        
-        DataItemInfo(String icon, String name, String unit) {
-            this.icon = icon;
-            this.name = name;
-            this.unit = unit;
         }
     }
 }
