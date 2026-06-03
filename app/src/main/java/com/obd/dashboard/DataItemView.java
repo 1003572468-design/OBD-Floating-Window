@@ -11,7 +11,6 @@ public class DataItemView extends LinearLayout {
     private TextView tvValue;
     private TextView tvUnit;
     private String dataKey;
-    private float currentValue = 0;
 
     public DataItemView(Context context) {
         super(context);
@@ -22,29 +21,25 @@ public class DataItemView extends LinearLayout {
         setOrientation(VERTICAL);
         setGravity(Gravity.CENTER);
         setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2));
-        
-        // 设置固定最小高度（针对小屏幕）
         setMinimumHeight(dpToPx(32));
+        setBackgroundColor(0xFF000000);  // 纯黑不透明背景
         
-        // 图标
         tvIcon = new TextView(context);
-        tvIcon.setTextSize(12);  // 12sp
+        tvIcon.setTextSize(12);
         tvIcon.setTextColor(0xFFFFFFFF);
         tvIcon.setGravity(Gravity.CENTER);
         addView(tvIcon, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         
-        // 数值
         tvValue = new TextView(context);
-        tvValue.setTextSize(14);  // 14sp
+        tvValue.setTextSize(14);
         tvValue.setTextColor(0xFFFFFFFF);
         tvValue.setTypeface(null, android.graphics.Typeface.BOLD);
         tvValue.setGravity(Gravity.CENTER);
         tvValue.setIncludeFontPadding(false);
         addView(tvValue, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         
-        // 单位
         tvUnit = new TextView(context);
-        tvUnit.setTextSize(8);  // 8sp
+        tvUnit.setTextSize(8);
         tvUnit.setTextColor(0x88888888);
         tvUnit.setGravity(Gravity.CENTER);
         addView(tvUnit, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -52,7 +47,6 @@ public class DataItemView extends LinearLayout {
     
     public void setData(String key, String icon, String unit, float value) {
         this.dataKey = key;
-        this.currentValue = value;
         tvIcon.setText(icon);
         tvValue.setText(formatValue(value));
         tvUnit.setText(unit);
@@ -60,7 +54,6 @@ public class DataItemView extends LinearLayout {
     }
     
     public void updateValue(float value) {
-        this.currentValue = value;
         tvValue.setText(formatValue(value));
         setColorByValue(dataKey, value);
     }
@@ -86,10 +79,6 @@ public class DataItemView extends LinearLayout {
             else if (value < 12.0) color = 0xFFFF9800;
         }
         tvValue.setTextColor(color);
-    }
-    
-    public String getDataKey() {
-        return dataKey;
     }
     
     private int dpToPx(int dp) {
