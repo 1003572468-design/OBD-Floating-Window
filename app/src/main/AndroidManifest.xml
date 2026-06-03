@@ -10,7 +10,7 @@
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
         
         <activity
-            android:name=".MainActivity"
+            android:name="com.obd.window.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,7 +19,7 @@
         </activity>
         
         <service
-            android:name=".DynamicIslandService"
+            android:name="com.obd.window.DynamicIslandService"
             android:exported="false" />
         
     </application>
