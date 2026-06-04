@@ -5,11 +5,12 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="OBD Dashboard"
-        android:theme="@style/Theme.AppCompat.Dark">
+        android:theme="@style/Theme.AppCompat.NoActionBar"> <!-- 改用存在的主题 -->
         
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"> <!-- 明确指定活动主题 -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
