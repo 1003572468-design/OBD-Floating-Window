@@ -1,11 +1,12 @@
-package com.example.obdparser; // 改成你的包名
+package com.example.obdparser;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
+import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,10 +32,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 初始化控件
         initViews();
-
-        // 开始模拟数据更新
         startDataSimulation();
     }
 
@@ -58,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 updateSimulatedData();
                 updateUI();
-                handler.postDelayed(this, 500); // 每 500ms 更新一次
+                handler.postDelayed(this, 500);
             }
         });
 
@@ -73,29 +71,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateSimulatedData() {
-        // 模拟车速变化（0-120 之间波动）
         speed = (int) (Math.random() * 80) + 20;
-        
-        // 模拟转速变化（800-4000 之间）
         rpm = (int) (Math.random() * 2500) + 800;
         
-        // 水温慢慢上升然后稳定
         if (temp < 90) {
             temp += 1;
         } else {
             temp = 90 + (int)(Math.random() * 10 - 5);
         }
         
-        // 电压在 13.5-14.5 之间波动
         voltage = 13.5f + (float)(Math.random() * 1.0);
-        
-        // 平均油耗
         avgFuel = 7.5f + (float)(Math.random() * 3);
-        
-        // 瞬时油耗（与车速相关）
         instantFuel = (float)(speed / 10.0) + (float)(Math.random() * 2);
         
-        // 总里程缓慢增加
         if (speed > 5) {
             totalMileage += 0.1;
         }
@@ -110,7 +98,6 @@ public class MainActivity extends AppCompatActivity {
         tvInstantFuel.setText(String.format("%.1f", instantFuel));
         tvTotalMileage.setText(String.valueOf(totalMileage));
         
-        // 模拟故障码（有时显示）
         if (Math.random() > 0.95) {
             tvErrorCodes.setText("P0300, P0420");
         } else {
@@ -121,13 +108,13 @@ public class MainActivity extends AppCompatActivity {
     private void updateConnectionStatus() {
         if (isConnected) {
             tvConnectionStatus.setText("OBD 已连接");
-            tvConnectionStatus.setTextColor(getColor(android.R.color.holo_green_light));
+            tvConnectionStatus.setTextColor(Color.parseColor("#00ff88"));
             if (ledStatus != null) {
                 ledStatus.setBackgroundResource(R.drawable.led_green);
             }
         } else {
             tvConnectionStatus.setText("等待 OBD 连接...");
-            tvConnectionStatus.setTextColor(getColor(android.R.color.darker_gray));
+            tvConnectionStatus.setTextColor(Color.parseColor("#888888"));
         }
     }
 }
