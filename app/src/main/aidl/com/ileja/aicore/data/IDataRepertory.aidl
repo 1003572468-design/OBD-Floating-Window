@@ -1,8 +1,8 @@
 // IDataRepertory.aidl
 package com.ileja.aicore.data;
 
-import android.os.Bundle;
 import com.ileja.aicore.data.IDataCallback;
+import android.os.Bundle;
 
 interface IDataRepertory {
     void register(String filter, IDataCallback callback);
