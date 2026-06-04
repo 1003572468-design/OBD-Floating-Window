@@ -1,4 +1,4 @@
-package com.example.obdparser;
+package com.obd.dashboard;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -18,7 +18,6 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler(Looper.getMainLooper());
     private boolean isConnected = false;
 
-    // 模拟数据
     private int speed = 0;
     private int rpm = 0;
     private int temp = 90;
@@ -50,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startDataSimulation() {
-        // 模拟 OBD 数据更新
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -60,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 3 秒后模拟连接成功
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -96,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
         tvVoltage.setText(String.format("%.1f", voltage));
         tvAvgFuel.setText(String.format("%.1f", avgFuel));
         tvInstantFuel.setText(String.format("%.1f", instantFuel));
-        tvTotalMileage.setText(String.valueOf(totalMileage));
+        tvTotalMileage.setText(String.valueOf((int)totalMileage));
         
         if (Math.random() > 0.95) {
             tvErrorCodes.setText("P0300, P0420");
