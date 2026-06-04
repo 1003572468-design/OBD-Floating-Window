@@ -1,4 +1,4 @@
-package com.obd.test;
+package com.example.obdparser;
 
 import android.content.ComponentName;
 import android.content.Context;
