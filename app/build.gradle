@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.obdparser'
+    namespace 'com.obd.dashboard'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.obdparser"
+        applicationId "com.obd.dashboard"
         minSdk 21
         targetSdk 33
         versionCode 1
