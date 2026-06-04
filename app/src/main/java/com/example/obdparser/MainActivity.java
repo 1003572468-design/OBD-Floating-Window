@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -15,9 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
     
-    private static final String TAG = "OBDDashboard";
-    private static final String ACTION_OBD_DATA = "com.cpsdna.obdport.data";
-    private static final String ACTION_OBD_VIN = "OBD_VIN";
+    private static final String TAG = "OBD_Dashboard";
     
     // UI 组件
     private TextView tvSpeed, tvRpm, tvTemp, tvVoltage;
@@ -27,11 +23,6 @@ public class MainActivity extends AppCompatActivity {
     
     // 广播接收器
     private OBDReceiver obdReceiver;
-    
-    // 连接状态
-    private boolean isConnected = false;
-    private long lastDataTime = 0;
-    private Handler timeoutHandler = new Handler(Looper.getMainLooper());
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,159 +49,127 @@ public class MainActivity extends AppCompatActivity {
     private void registerOBDReceiver() {
         obdReceiver = new OBDReceiver();
         IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_OBD_DATA);
-        filter.addAction(ACTION_OBD_VIN);
+        
+        // 注册所有 OBD 相关的广播
+        filter.addAction("com.cpsdna.obdport.data");        // OBD 实时数据
+        filter.addAction("com.cpsdna.obdport.fire");        // 点火状态
+        filter.addAction("OBD_STATUS_CONNECTED");           // 连接成功
+        filter.addAction("OBD_STATUS_ERROR");               // 连接错误
+        filter.addAction("OBD_VIN");                        // VIN 码
+        filter.addAction("com.cpsdna.obdport.tire");        // 胎压数据
+        filter.addAction("OBD_single_MILE");                // 单次里程
+        
         registerReceiver(obdReceiver, filter);
         Log.d(TAG, "OBD 广播接收器已注册");
     }
     
-    /**
-     * OBD 广播接收器 - 接收 AICore 发送的真实数据
-     */
     private class OBDReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent == null) return;
-            
             String action = intent.getAction();
             Bundle extras = intent.getExtras();
             
-            if (extras == null) {
-                Log.w(TAG, "广播没有携带数据");
-                return;
-            }
+            Log.d(TAG, "收到广播: " + action);
             
-            if (ACTION_OBD_DATA.equals(action)) {
-                // 收到真实 OBD 数据
-                handleOBDData(extras);
-            } else if (ACTION_OBD_VIN.equals(action)) {
-                String vin = extras.getString("OBD_VIN");
-                Log.d(TAG, "收到 VIN 码: " + vin);
-            }
-        }
-        
-        private void handleOBDData(Bundle extras) {
-            // 从 AICore 的 AIDinaObdReceiver 中提取真实数据
-            // 这些 Key 是从逆向分析中发现的
-            int speed = getIntValue(extras, "VehicleSpeed", 0);
-            int rpm = getIntValue(extras, "EngineRPM", 0);
-            int coolantTemp = getIntValue(extras, "EngineCoolantTemperature", 0);
-            float battery = getFloatValue(extras, "VehicleVoltage", 0);
-            float instantFuel = getFloatValue(extras, "INSTANT_FUEL", 0);
-            float avgFuel = getFloatValue(extras, "AVERAGE_FUEL", 0);
-            int totalMileage = getIntValue(extras, "TotalMileage", 0);
-            
-            // 故障码
-            String[] errorCodes = extras.getStringArray("TroubleCodeArray");
-            int errorCount = getIntValue(extras, "DTCStoredInthisECU", 0);
-            
-            // 胎压数据（可选）
-            int tireLF = getIntValue(extras, "TirePressueLF", 0);
-            int tireRF = getIntValue(extras, "TirePressueRF", 0);
-            int tireLR = getIntValue(extras, "TirePressueLB", 0);
-            int tireRR = getIntValue(extras, "TirePressueRB", 0);
-            
-            // 记录日志
-            Log.d(TAG, String.format("真实OBD数据 | 车速:%d km/h | 转速:%d rpm | 水温:%d°C | 电压:%.1fV | 平均油耗:%.1fL/100km",
-                    speed, rpm, coolantTemp, battery, avgFuel));
-            
-            // 更新 UI
-            updateUI(speed, rpm, coolantTemp, battery, avgFuel, instantFuel, totalMileage, errorCodes);
-            
-            // 更新连接状态
-            if (!isConnected) {
-                isConnected = true;
+            if ("com.cpsdna.obdport.data".equals(action)) {
+                // OBD 实时数据
+                if (extras != null) {
+                    parseOBDData(extras);
+                }
+            } 
+            else if ("OBD_STATUS_CONNECTED".equals(action)) {
                 updateConnectionStatus(true);
+                Log.d(TAG, "OBD 已连接");
             }
-            lastDataTime = System.currentTimeMillis();
-            
-            // 设置超时检测：5秒没收到数据认为断开
-            timeoutHandler.removeCallbacks(timeoutRunnable);
-            timeoutHandler.postDelayed(timeoutRunnable, 5000);
+            else if ("OBD_STATUS_ERROR".equals(action)) {
+                updateConnectionStatus(false);
+                Log.d(TAG, "OBD 连接错误");
+            }
+            else if ("com.cpsdna.obdport.fire".equals(action)) {
+                boolean isFire = extras != null && extras.getBoolean("fire", false);
+                Log.d(TAG, isFire ? "车辆已点火" : "车辆已熄火");
+            }
+            else if ("OBD_VIN".equals(action)) {
+                String vin = extras != null ? extras.getString("OBD_VIN") : "";
+                Log.d(TAG, "VIN码: " + vin);
+            }
+            else if ("OBD_single_MILE".equals(action)) {
+                int mile = extras != null ? extras.getInt("OBD_single_MILE", 0) : 0;
+                Log.d(TAG, "单次里程: " + mile);
+            }
         }
         
-        private int getIntValue(Bundle bundle, String key, int defaultValue) {
-            Object value = bundle.get(key);
-            if (value instanceof Integer) {
-                return (int) value;
-            } else if (value instanceof String) {
-                try {
-                    return Integer.parseInt((String) value);
-                } catch (NumberFormatException e) {
-                    return defaultValue;
-                }
+        private void parseOBDData(Bundle extras) {
+            try {
+                // 从 AILejaObdReader 中确认的数据 Key
+                int rpm = extras.getInt("EngineRPM", 0);
+                int speed = extras.getInt("VehicleSpeed", 0);
+                int temp = extras.getInt("EngineCoolantTemperature", 0);
+                float voltage = extras.getFloat("VehicleVoltage", 0);
+                float instantFuel = extras.getFloat("INSTANT_FUEL", 0);
+                float avgFuel = extras.getFloat("AVERAGE_FUEL", 0);
+                int totalMileage = extras.getInt("TotalMileage", 0);
+                int errorCount = extras.getInt("DTCStoredInthisECU", 0);
+                String[] errorCodes = extras.getStringArray("TroubleCodeArray");
+                
+                // 胎压数据
+                int tireLF = extras.getInt("TirePressueLF", 0);
+                int tireRF = extras.getInt("TirePressueRF", 0);
+                int tireLB = extras.getInt("TirePressueLB", 0);
+                int tireRB = extras.getInt("TirePressueRB", 0);
+                
+                Log.d(TAG, String.format(
+                    "OBD | 车速:%d km/h | 转速:%d rpm | 水温:%d°C | 电压:%.1fV | 平均油耗:%.1fL/100km",
+                    speed, rpm, temp, voltage, avgFuel
+                ));
+                
+                // 更新 UI
+                runOnUiThread(() -> updateUI(speed, rpm, temp, voltage, avgFuel, instantFuel, totalMileage, errorCodes));
+                
+            } catch (Exception e) {
+                Log.e(TAG, "解析 OBD 数据失败: " + e.getMessage());
             }
-            return defaultValue;
-        }
-        
-        private float getFloatValue(Bundle bundle, String key, float defaultValue) {
-            Object value = bundle.get(key);
-            if (value instanceof Float) {
-                return (float) value;
-            } else if (value instanceof Integer) {
-                return ((Integer) value).floatValue();
-            } else if (value instanceof String) {
-                try {
-                    return Float.parseFloat((String) value);
-                } catch (NumberFormatException e) {
-                    return defaultValue;
-                }
-            }
-            return defaultValue;
         }
     }
     
     private void updateUI(int speed, int rpm, int temp, float voltage, 
-                          float avgFuel, float instantFuel, int totalMileage, 
+                          float avgFuel, float instantFuel, int totalMileage,
                           String[] errorCodes) {
-        runOnUiThread(() -> {
-            tvSpeed.setText(String.valueOf(speed));
-            tvRpm.setText(String.valueOf(rpm));
-            tvTemp.setText(String.valueOf(temp));
-            tvVoltage.setText(String.format("%.1f", voltage));
-            tvAvgFuel.setText(String.format("%.1f", avgFuel));
-            tvInstantFuel.setText(String.format("%.1f", instantFuel));
-            tvTotalMileage.setText(String.valueOf(totalMileage));
-            
-            if (errorCodes != null && errorCodes.length > 0) {
-                StringBuilder sb = new StringBuilder();
-                for (String code : errorCodes) {
-                    if (sb.length() > 0) sb.append(", ");
-                    sb.append(code);
-                }
-                tvErrorCodes.setText(sb.toString());
-                tvErrorCodes.setTextColor(Color.parseColor("#ff4444"));
-            } else {
-                tvErrorCodes.setText("无故障码");
-                tvErrorCodes.setTextColor(Color.parseColor("#00d8ff"));
+        tvSpeed.setText(String.valueOf(speed));
+        tvRpm.setText(String.valueOf(rpm));
+        tvTemp.setText(String.valueOf(temp));
+        tvVoltage.setText(String.format("%.1f", voltage));
+        tvAvgFuel.setText(String.format("%.1f", avgFuel));
+        tvInstantFuel.setText(String.format("%.1f", instantFuel));
+        tvTotalMileage.setText(String.valueOf(totalMileage));
+        
+        if (errorCodes != null && errorCodes.length > 0) {
+            StringBuilder sb = new StringBuilder();
+            for (String code : errorCodes) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(code);
             }
-        });
+            tvErrorCodes.setText(sb.toString());
+            tvErrorCodes.setTextColor(Color.parseColor("#ff4444"));
+        } else {
+            tvErrorCodes.setText("无");
+            tvErrorCodes.setTextColor(Color.parseColor("#00d8ff"));
+        }
     }
     
     private void updateConnectionStatus(boolean connected) {
         runOnUiThread(() -> {
             if (connected) {
-                tvConnectionStatus.setText("OBD 已连接");
+                tvConnectionStatus.setText("已连接");
                 tvConnectionStatus.setTextColor(Color.parseColor("#00ff88"));
                 ledStatus.setBackgroundResource(R.drawable.led_green);
             } else {
-                tvConnectionStatus.setText("OBD 未连接");
+                tvConnectionStatus.setText("未连接");
                 tvConnectionStatus.setTextColor(Color.parseColor("#888888"));
                 ledStatus.setBackgroundResource(R.drawable.led_red);
             }
         });
     }
-    
-    private Runnable timeoutRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (System.currentTimeMillis() - lastDataTime > 5000) {
-                isConnected = false;
-                updateConnectionStatus(false);
-                Log.w(TAG, "OBD 数据超时，已断开连接");
-            }
-        }
-    };
     
     @Override
     protected void onDestroy() {
@@ -218,6 +177,5 @@ public class MainActivity extends AppCompatActivity {
         if (obdReceiver != null) {
             unregisterReceiver(obdReceiver);
         }
-        timeoutHandler.removeCallbacks(timeoutRunnable);
     }
 }
