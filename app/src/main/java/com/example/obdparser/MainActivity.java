@@ -1,92 +1,103 @@
 package com.example.obdparser;
 
-import android.content.ComponentName;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.RemoteException;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import com.ileja.aicore.data.IDataCallback;
-import com.ileja.aicore.data.IDataRepertory;
+
+import com.ileja.aicar.obd.data.AIObdDataMessage;
+import com.ileja.aicar.obd.data.AIObdRealtimeData;
+import com.ileja.aicar.obd.data.AIObdStatus;
+import com.ileja.aicar.obd.data.AIObdFuelData;
+import com.ileja.aicar.obd.data.AIObdErrorData;
+import com.ileja.core.data.CommonConfig;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "OBD";
     
-    private TextView tvLog;
-    private IDataRepertory dataRepertory;
-    private boolean isBound = false;
+    private TextView tvSpeed;
+    private TextView tvRpm;
+    private TextView tvStatus;
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
     
-    private IDataCallback callback = new IDataCallback.Stub() {
+    private BroadcastReceiver obdReceiver = new BroadcastReceiver() {
         @Override
-        public void callback(String filter, Bundle data) throws RemoteException {
-            String text = tvLog.getText().toString();
-            StringBuilder sb = new StringBuilder(text);
-            sb.append("\n\n📡 收到回调: ").append(filter);
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            android.os.Bundle bundle = intent.getExtras();
             
-            if (data != null) {
-                for (String key : data.keySet()) {
-                    sb.append("\n   ").append(key).append(" = ").append(data.get(key));
+            if (bundle == null) return;
+            
+            if (AIObdDataMessage.OBD_REAL_MESSAGE_FILTER.equals(action)) {
+                AIObdRealtimeData data = bundle.getParcelable(CommonConfig.Data);
+                if (data != null && data.isValid()) {
+                    float speed = data.obdSpeed;
+                    float rpm = data.obdRotateSpeed;
+                    
+                    mainHandler.post(() -> {
+                        if (tvSpeed != null) {
+                            tvSpeed.setText(String.format("%.1f km/h", speed));
+                        }
+                        if (tvRpm != null) {
+                            tvRpm.setText(String.format("%.0f rpm", rpm));
+                        }
+                    });
+                    
+                    Log.d(TAG, String.format("车速: %.1f km/h, 转速: %.0f rpm", speed, rpm));
                 }
             }
             
-            runOnUiThread(() -> tvLog.setText(sb.toString()));
-        }
-    };
-    
-    private ServiceConnection connection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            String text = tvLog.getText().toString();
-            tvLog.setText(text + "\n✅ 服务已连接");
-            
-            dataRepertory = IDataRepertory.Stub.asInterface(service);
-            isBound = true;
-            
-            try {
-                dataRepertory.register("com.ileja.aicar.obd.real", callback);
-                tvLog.setText(tvLog.getText() + "\n📝 已注册实时数据监听");
-            } catch (RemoteException e) {
-                tvLog.setText(tvLog.getText() + "\n❌ 注册失败: " + e.getMessage());
+            else if (AIObdDataMessage.OBD_STATUS_MESSAGE_FILTER.equals(action)) {
+                AIObdStatus status = bundle.getParcelable(CommonConfig.Data);
+                if (status != null) {
+                    String statusText = status.getStatus() == 0 ? "已连接" : "未连接";
+                    mainHandler.post(() -> {
+                        if (tvStatus != null) {
+                            tvStatus.setText("OBD: " + statusText);
+                        }
+                    });
+                    Log.d(TAG, "OBD状态: " + statusText);
+                }
             }
-        }
-        
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            tvLog.setText(tvLog.getText() + "\n⚠️ 服务断开");
-            dataRepertory = null;
-            isBound = false;
         }
     };
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
         
-        tvLog = new TextView(this);
-        tvLog.setText("正在连接 AICore 服务...\n");
-        tvLog.setTextSize(14);
-        tvLog.setPadding(20, 20, 20, 20);
-        setContentView(tvLog);
+        tvSpeed = findViewById(R.id.tv_speed);
+        tvRpm = findViewById(R.id.tv_rpm);
+        tvStatus = findViewById(R.id.tv_status);
         
-        Intent intent = new Intent();
-        intent.setClassName("com.ileja.aicore", "com.ileja.aicore.data.DataRepertoryService");
-        boolean result = bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        registerObdReceiver();
+    }
+    
+    private void registerObdReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(AIObdDataMessage.OBD_REAL_MESSAGE_FILTER);
+        filter.addAction(AIObdDataMessage.OBD_STATUS_MESSAGE_FILTER);
+        filter.addAction(AIObdDataMessage.OBD_FUEL_MESSAGE_FILTER);
+        filter.addAction(AIObdDataMessage.OBD_ERROR_MESSAGE_FILTER);
         
-        tvLog.setText(tvLog.getText() + "绑定结果: " + result + "\n");
+        registerReceiver(obdReceiver, filter);
+        Log.d(TAG, "广播接收器已注册");
     }
     
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isBound && dataRepertory != null) {
-            try {
-                dataRepertory.unregister("com.ileja.aicar.obd.real", callback);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-            unbindService(connection);
+        try {
+            unregisterReceiver(obdReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
