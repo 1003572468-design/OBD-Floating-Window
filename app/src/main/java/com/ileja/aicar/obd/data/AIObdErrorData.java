@@ -3,7 +3,6 @@ package com.ileja.aicar.obd.data;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
-import com.ileja.aibase.config.HttpConfig;
 import java.util.Locale;
 
 public class AIObdErrorData extends AIObdData {
@@ -50,7 +49,7 @@ public class AIObdErrorData extends AIObdData {
             if (upperCase.startsWith("P")) {
                 return ErrType.PowerSystem;
             }
-            if (upperCase.startsWith(HttpConfig.TAG.SET_MAP_BAIDU)) {
+            if (upperCase.startsWith("B")) {  // 修改这里：原来是 HttpConfig.TAG.SET_MAP_BAIDU
                 return ErrType.CarBody;
             }
             if (upperCase.startsWith("C")) {
